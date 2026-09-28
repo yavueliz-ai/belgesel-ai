@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Belgesel AI v3.1</title>
+
+<style>
+body{font-family:system-ui;background:#0b0b0d;color:#f5f5f5;margin:0;padding:22px}
+.wrap{max-width:760px;margin:auto}
+.card{background:#151518;border:1px solid #2a2a30;border-radius:18px;padding:18px;margin:14px 0}
+input,button{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #333;font-size:16px}
+input{background:#0e0e11;color:white;margin:8px 0 12px}
+button{background:#efefef;color:#111;font-weight:700;cursor:pointer}
+.muted{color:#aaa}
+.status{margin-top:12px;white-space:pre-wrap}
+.img{width:100%;border-radius:14px;margin-top:14px;display:none}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<h1>🎬 Belgesel AI <small>v3.1</small></h1>
+<p class="muted">İlk güvenli test: tek sahne için gerçek AI görseli üretir.</p>
+
+<div class="card">
+
+<label>Konu</label>
+<input id="topic" value="Tomris Hatun">
+
+<label>Sahne</label>
+<input id="scene" value="Avrasya bozkırlarında gün doğumunda atının yanında duran Tomris Hatun">
+
+<button id="go">1 TEST GÖRSELİ ÜRET</button>
+
+<div id="status" class="status muted"></div>
+<img id="out" class="img" alt="Üretilen görsel">
+
+</div>
+
+<div class="card">
+<b>Not</b>
+<p class="muted">
+API anahtarı tarayıcıya gönderilmez. Netlify Function içindeki gizli ortam değişkeninden okunur.
+</p>
+</div>
+
+</div>
+
+<script>
+const go=document.getElementById('go'),
+status=document.getElementById('status'),
+out=document.getElementById('out');
+
+go.onclick=async()=>{
+go.disabled=true;
+out.style.display='none';
+status.textContent='Görsel hazırlanıyor…';
+
+try{
+const r=await fetch('/.netlify/functions/generate-image',{
+method:'POST',
+headers:{'content-type':'application/json'},
+body:JSON.stringify({
+topic:document.getElementById('topic').value,
+scene:document.getElementById('scene').value
+})
+});
+
+if(!r.ok){
+let t=await r.text();
+throw new Error(t||('HTTP '+r.status))
+}
+
+const b=await r.blob();
+out.src=URL.createObjectURL(b);
+out.style.display='block';
+status.textContent='Tamamlandı.';
+
+}catch(e){
+status.textContent='Hata: '+e.message
+}finally{
+go.disabled=false
+}
+};
+</script>
+
+</body>
+</html>
