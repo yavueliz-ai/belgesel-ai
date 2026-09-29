@@ -3,17 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Belgesel AI v3.3</title>
+<title>Belgesel AI v4.0</title>
 
 <style>
+*{box-sizing:border-box}
+
 body{
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   background:#0b0b0d;
   color:#f5f5f5;
   margin:0;
   padding:22px
 }
-.wrap{max-width:760px;margin:auto}
+
+.wrap{
+  max-width:760px;
+  margin:auto
+}
+
+h1{
+  margin-bottom:8px
+}
+
+small{
+  color:#999;
+  font-size:14px
+}
+
 .card{
   background:#151518;
   border:1px solid #2a2a30;
@@ -21,7 +37,8 @@ body{
   padding:18px;
   margin:14px 0
 }
-input,button{
+
+input,button,select{
   width:100%;
   box-sizing:border-box;
   padding:14px;
@@ -29,11 +46,13 @@ input,button{
   border:1px solid #333;
   font-size:16px
 }
-input{
+
+input,select{
   background:#0e0e11;
   color:white;
   margin:8px 0 12px
 }
+
 button{
   background:#efefef;
   color:#111;
@@ -41,12 +60,22 @@ button{
   cursor:pointer;
   margin-top:10px
 }
-button:disabled{opacity:.5}
-.muted{color:#aaa}
+
+button:disabled{
+  opacity:.45;
+  cursor:not-allowed
+}
+
+.muted{
+  color:#aaa
+}
+
 .status{
   margin-top:14px;
-  white-space:pre-wrap
+  white-space:pre-wrap;
+  line-height:1.5
 }
+
 .story{
   background:#0e0e11;
   border:1px solid #29292f;
@@ -54,6 +83,7 @@ button:disabled{opacity:.5}
   padding:14px;
   margin-top:14px
 }
+
 .scene{
   margin-top:18px;
   overflow:hidden;
@@ -61,24 +91,61 @@ button:disabled{opacity:.5}
   background:#0e0e11;
   border:1px solid #29292f
 }
+
 .scene img{
   width:100%;
   aspect-ratio:9/16;
   object-fit:cover;
-  display:block;
-  animation:cameraMove 8s ease-in-out infinite alternate
+  display:block
 }
+
 .sceneText{
   padding:14px;
   line-height:1.5
 }
+
 .sceneNumber{
-  font-weight:700;
+  font-weight:800;
   margin-bottom:8px
 }
-@keyframes cameraMove{
-  0%{transform:scale(1)}
-  100%{transform:scale(1.12) translateY(-1%)}
+
+.progress{
+  height:8px;
+  background:#26262b;
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:12px
+}
+
+.progressBar{
+  height:100%;
+  width:0%;
+  background:#eee;
+  transition:width .3s
+}
+
+video{
+  width:100%;
+  border-radius:16px;
+  margin-top:16px;
+  background:black;
+  aspect-ratio:9/16
+}
+
+.download{
+  display:block;
+  text-decoration:none;
+  background:#efefef;
+  color:#111;
+  font-weight:800;
+  text-align:center;
+  padding:14px;
+  border-radius:12px;
+  margin-top:12px
+}
+
+.hidden{
+  display:none
 }
 </style>
 </head>
@@ -87,11 +154,11 @@ button:disabled{opacity:.5}
 
 <div class="wrap">
 
-<h1>🎬 Belgesel AI <small>v3.3</small></h1>
+<h1>🎬 Belgesel AI <small>v4.0</small></h1>
 
 <p class="muted">
-Konuyu yaz. AI önce kısa belgesel hikâyesini ve sahneleri hazırlasın,
-sonra her sahne için 9:16 görsel üretsin.
+Konuyu yaz. Belgesel AI senaryoyu, sahneleri, dikey görselleri,
+Türkçe seslendirmeyi ve Shorts videosunu hazırlasın.
 </p>
 
 <div class="card">
@@ -112,240 +179,860 @@ value="6"
 min="3"
 max="8">
 
+<label>Anlatıcı sesi</label>
+
+<select id="voice">
+<option value="nova">Nova</option>
+<option value="alloy">Alloy</option>
+<option value="echo">Echo</option>
+<option value="fable">Fable</option>
+<option value="onyx">Onyx</option>
+<option value="shimmer">Shimmer</option>
+</select>
+
 <button id="storyBtn">
 1 — HİKÂYE VE SAHNELERİ OLUŞTUR
 </button>
+
+<button id="imageBtn" class="hidden">
+2 — TÜM GÖRSELLERİ ÜRET
+</button>
+
+<button id="audioBtn" class="hidden">
+3 — TÜRKÇE SESLENDİRMEYİ HAZIRLA
+</button>
+
+<button id="videoBtn" class="hidden">
+4 — SHORTS VİDEOSUNU OLUŞTUR
+</button>
+
+<div class="progress">
+<div id="progressBar" class="progressBar"></div>
+</div>
 
 <div id="status" class="status muted"></div>
 
 <div id="storyArea"></div>
 
-<button id="imageBtn" style="display:none">
-2 — TÜM GÖRSELLERİ ÜRET
-</button>
-<button id="videoBtn" style="display:none">
-3 – SHORTS VİDEOSUNU OLUŞTUR
-</button>
 <div id="results"></div>
 
-</div>
+<div id="videoArea"></div>
 
+</div>
 </div>
 
 <script>
 
-const storyBtn=document.getElementById('storyBtn');
-const imageBtn=document.getElementById('imageBtn');
-const status=document.getElementById('status');
-const storyArea=document.getElementById('storyArea');
-const results=document.getElementById('results');
+const storyBtn = document.getElementById("storyBtn");
+const imageBtn = document.getElementById("imageBtn");
+const audioBtn = document.getElementById("audioBtn");
+const videoBtn = document.getElementById("videoBtn");
 
-let currentStory=null;
+const status = document.getElementById("status");
+const storyArea = document.getElementById("storyArea");
+const results = document.getElementById("results");
+const videoArea = document.getElementById("videoArea");
+const progressBar = document.getElementById("progressBar");
 
-storyBtn.onclick=async()=>{
+let currentStory = null;
+let generatedImages = [];
+let generatedAudio = [];
 
-const topic=document.getElementById('topic').value.trim();
-
-const sceneCount=Math.min(
-8,
-Math.max(
-3,
-Number(document.getElementById('count').value)||6
-)
-);
-
-if(!topic){
-status.textContent='Lütfen bir konu yaz.';
-return;
+function setProgress(value){
+  progressBar.style.width = value + "%";
 }
 
-storyBtn.disabled=true;
-imageBtn.style.display='none';
-storyArea.innerHTML='';
-results.innerHTML='';
-currentStory=null;
-
-status.textContent='AI belgesel hikâyesini hazırlıyor…';
-
-try{
-
-const r=await fetch(
-'/.netlify/functions/generate-story',
-{
-method:'POST',
-headers:{
-'content-type':'application/json'
-},
-body:JSON.stringify({
-topic,
-sceneCount
-})
-}
-);
-
-const text=await r.text();
-
-let data;
-
-try{
-data=JSON.parse(text);
-}catch{
-throw new Error(text||'Geçersiz sunucu yanıtı');
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve,ms));
 }
 
-if(!r.ok){
-throw new Error(
-data.error+
-(data.detail ? '\n'+data.detail : '')
-);
-}
+storyBtn.onclick = async () => {
 
-if(!data.scenes || !Array.isArray(data.scenes)){
-throw new Error('Sahne listesi alınamadı.');
-}
+  const topic = document.getElementById("topic").value.trim();
 
-currentStory=data;
+  const sceneCount = Math.min(
+    8,
+    Math.max(
+      3,
+      Number(document.getElementById("count").value) || 6
+    )
+  );
 
-const title=document.createElement('div');
-title.className='story';
+  if(!topic){
+    status.textContent = "Lütfen bir konu yaz.";
+    return;
+  }
 
-const h=document.createElement('h2');
-h.textContent=data.title || topic;
+  storyBtn.disabled = true;
 
-title.appendChild(h);
+  imageBtn.classList.add("hidden");
+  audioBtn.classList.add("hidden");
+  videoBtn.classList.add("hidden");
 
-data.scenes.forEach((s,i)=>{
+  storyArea.innerHTML = "";
+  results.innerHTML = "";
+  videoArea.innerHTML = "";
 
-const box=document.createElement('div');
-box.className='sceneText';
+  generatedImages = [];
+  generatedAudio = [];
+  currentStory = null;
 
-const n=document.createElement('div');
-n.className='sceneNumber';
-n.textContent=`Sahne ${i+1}`;
+  setProgress(10);
 
-const narration=document.createElement('div');
-narration.textContent=s.narration || '';
+  status.textContent =
+    "✍️ Belgesel senaryosu hazırlanıyor...";
 
-box.appendChild(n);
-box.appendChild(narration);
-title.appendChild(box);
+  try{
 
-});
+    const r = await fetch(
+      "/.netlify/functions/generate-story",
+      {
+        method:"POST",
+        headers:{
+          "content-type":"application/json"
+        },
+        body:JSON.stringify({
+          topic,
+          sceneCount
+        })
+      }
+    );
 
-storyArea.appendChild(title);
+    const raw = await r.text();
 
-imageBtn.style.display='block';
+    let data;
 
-status.textContent=
-'✅ Hikâye hazır. Kontrol ettikten sonra görselleri üretebilirsin.';
+    try{
+      data = JSON.parse(raw);
+    }catch{
+      throw new Error(raw || "Sunucu yanıtı okunamadı.");
+    }
 
-}catch(e){
+    if(!r.ok){
+      throw new Error(
+        data.error +
+        (data.detail ? "\n" + data.detail : "")
+      );
+    }
 
-status.textContent='Hata: '+e.message;
+    if(!Array.isArray(data.scenes)){
+      throw new Error("Sahneler alınamadı.");
+    }
 
-}finally{
+    currentStory = data;
 
-storyBtn.disabled=false;
+    const container = document.createElement("div");
+    container.className = "story";
 
-}
+    const title = document.createElement("h2");
+    title.textContent = data.title || topic;
+
+    container.appendChild(title);
+
+    data.scenes.forEach((scene,index)=>{
+
+      const box = document.createElement("div");
+      box.className = "sceneText";
+
+      const n = document.createElement("div");
+      n.className = "sceneNumber";
+      n.textContent = `Sahne ${index+1}`;
+
+      const narration = document.createElement("div");
+      narration.textContent = scene.narration || "";
+
+      box.appendChild(n);
+      box.appendChild(narration);
+
+      container.appendChild(box);
+
+    });
+
+    storyArea.appendChild(container);
+
+    imageBtn.classList.remove("hidden");
+
+    setProgress(25);
+
+    status.textContent =
+      "✅ Senaryo hazır.\nŞimdi tüm görselleri oluşturabilirsin.";
+
+  }catch(error){
+
+    status.textContent =
+      "❌ Hata: " + error.message;
+
+    setProgress(0);
+
+  }finally{
+
+    storyBtn.disabled = false;
+
+  }
+};
+
+
+imageBtn.onclick = async () => {
+
+  if(!currentStory) return;
+
+  storyBtn.disabled = true;
+  imageBtn.disabled = true;
+
+  results.innerHTML = "";
+  generatedImages = [];
+
+  const topic =
+    document.getElementById("topic").value.trim();
+
+  const scenes = currentStory.scenes;
+
+  for(let i=0;i<scenes.length;i++){
+
+    status.textContent =
+      `🖼️ Görsel ${i+1}/${scenes.length} hazırlanıyor...`;
+
+    setProgress(
+      25 + Math.round(((i+1)/scenes.length)*30)
+    );
+
+    try{
+
+      const scene = scenes[i];
+
+      const r = await fetch(
+        "/.netlify/functions/generate-image",
+        {
+          method:"POST",
+          headers:{
+            "content-type":"application/json"
+          },
+          body:JSON.stringify({
+            topic,
+            scene:
+              scene.imagePrompt ||
+              scene.narration ||
+              topic
+          })
+        }
+      );
+
+      if(!r.ok){
+        const text = await r.text();
+        throw new Error(text || "Görsel oluşturulamadı.");
+      }
+
+      const blob = await r.blob();
+
+      const url =
+        URL.createObjectURL(blob);
+
+      generatedImages.push({
+        blob,
+        url
+      });
+
+      const box =
+        document.createElement("div");
+
+      box.className = "scene";
+
+      const img =
+        document.createElement("img");
+
+      img.src = url;
+
+      const text =
+        document.createElement("div");
+
+      text.className = "sceneText";
+
+      const num =
+        document.createElement("div");
+
+      num.className = "sceneNumber";
+      num.textContent = `Sahne ${i+1}`;
+
+      const narration =
+        document.createElement("div");
+
+      narration.textContent =
+        scene.narration || "";
+
+      text.appendChild(num);
+      text.appendChild(narration);
+
+      box.appendChild(img);
+      box.appendChild(text);
+
+      results.appendChild(box);
+
+    }catch(error){
+
+      status.textContent =
+        `❌ Sahne ${i+1} hatası: ${error.message}`;
+
+      imageBtn.disabled = false;
+      storyBtn.disabled = false;
+
+      return;
+
+    }
+
+  }
+
+  setProgress(55);
+
+  status.textContent =
+    "✅ Tüm görseller hazır.";
+
+  audioBtn.classList.remove("hidden");
+
+  imageBtn.disabled = false;
+  storyBtn.disabled = false;
+};
+
+
+audioBtn.onclick = async () => {
+
+  if(!currentStory) return;
+
+  if(
+    generatedImages.length !==
+    currentStory.scenes.length
+  ){
+    status.textContent =
+      "Önce bütün görselleri oluştur.";
+    return;
+  }
+
+  audioBtn.disabled = true;
+  generatedAudio = [];
+
+  const voice =
+    document.getElementById("voice").value;
+
+  for(
+    let i=0;
+    i<currentStory.scenes.length;
+    i++
+  ){
+
+    status.textContent =
+      `🎙️ Seslendirme ${i+1}/${currentStory.scenes.length} hazırlanıyor...`;
+
+    setProgress(
+      55 +
+      Math.round(
+        ((i+1)/currentStory.scenes.length)*25
+      )
+    );
+
+    try{
+
+      const narration =
+        currentStory.scenes[i].narration;
+
+      const r = await fetch(
+        "/.netlify/functions/generate-audio",
+        {
+          method:"POST",
+          headers:{
+            "content-type":"application/json"
+          },
+          body:JSON.stringify({
+            text:narration,
+            voice
+          })
+        }
+      );
+
+      if(!r.ok){
+
+        const message =
+          await r.text();
+
+        throw new Error(
+          message || "Ses üretilemedi."
+        );
+
+      }
+
+      const blob =
+        await r.blob();
+
+      generatedAudio.push(blob);
+
+    }catch(error){
+
+      status.textContent =
+        "❌ Seslendirme hatası: " +
+        error.message;
+
+      audioBtn.disabled = false;
+      return;
+
+    }
+
+  }
+
+  setProgress(80);
+
+  status.textContent =
+    "✅ Türkçe seslendirmeler hazır.";
+
+  videoBtn.classList.remove("hidden");
+
+  audioBtn.disabled = false;
+};
+
+
+videoBtn.onclick = async () => {
+
+  if(
+    !currentStory ||
+    generatedImages.length === 0 ||
+    generatedAudio.length === 0
+  ){
+    status.textContent =
+      "Önce görselleri ve seslendirmeyi oluştur.";
+    return;
+  }
+
+  videoBtn.disabled = true;
+  storyBtn.disabled = true;
+  imageBtn.disabled = true;
+  audioBtn.disabled = true;
+
+  videoArea.innerHTML = "";
+
+  status.textContent =
+    "🎬 Shorts videosu hazırlanıyor...\nBu işlem video süresi kadar sürebilir.";
+
+  setProgress(82);
+
+  try{
+
+    const audioContext =
+      new (
+        window.AudioContext ||
+        window.webkitAudioContext
+      )();
+
+    await audioContext.resume();
+
+    const buffers = [];
+
+    for(const blob of generatedAudio){
+
+      const arrayBuffer =
+        await blob.arrayBuffer();
+
+      const decoded =
+        await audioContext.decodeAudioData(
+          arrayBuffer.slice(0)
+        );
+
+      buffers.push(decoded);
+
+    }
+
+    const canvas =
+      document.createElement("canvas");
+
+    /*
+      540x960 kullanıyoruz.
+      Bu gerçek 9:16 oranıdır ve mobil cihazlarda
+      tarayıcı içi video üretimini daha kararlı tutar.
+    */
+
+    canvas.width = 540;
+    canvas.height = 960;
+
+    const ctx =
+      canvas.getContext("2d");
+
+    const canvasStream =
+      canvas.captureStream(30);
+
+    const destination =
+      audioContext.createMediaStreamDestination();
+
+    canvasStream.addTrack(
+      destination.stream.getAudioTracks()[0]
+    );
+
+    let mimeType = "";
+
+    const candidates = [
+      "video/mp4;codecs=h264,aac",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm"
+    ];
+
+    for(const type of candidates){
+
+      if(MediaRecorder.isTypeSupported(type)){
+        mimeType = type;
+        break;
+      }
+
+    }
+
+    if(!mimeType){
+      throw new Error(
+        "Bu tarayıcı video oluşturmayı desteklemiyor."
+      );
+    }
+
+    const recorder =
+      new MediaRecorder(
+        canvasStream,
+        {
+          mimeType,
+          videoBitsPerSecond:5000000
+        }
+      );
+
+    const chunks = [];
+
+    recorder.ondataavailable = event => {
+
+      if(event.data && event.data.size){
+        chunks.push(event.data);
+      }
+
+    };
+
+    const finished =
+      new Promise(resolve => {
+
+        recorder.onstop = () =>
+          resolve();
+
+      });
+
+    recorder.start(1000);
+
+    for(
+      let i=0;
+      i<currentStory.scenes.length;
+      i++
+    ){
+
+      const img =
+        await loadImage(
+          generatedImages[i].url
+        );
+
+      const buffer =
+        buffers[i];
+
+      const source =
+        audioContext.createBufferSource();
+
+      source.buffer = buffer;
+      source.connect(destination);
+
+      const gain =
+        audioContext.createGain();
+
+      gain.gain.value = 1;
+
+      source.connect(gain);
+      gain.connect(audioContext.destination);
+
+      const duration =
+        Math.max(
+          buffer.duration + 0.35,
+          2
+        );
+
+      source.start();
+
+      const start =
+        performance.now();
+
+      await new Promise(resolve => {
+
+        function draw(now){
+
+          const elapsed =
+            (now-start)/1000;
+
+          const progress =
+            Math.min(
+              elapsed/duration,
+              1
+            );
+
+          drawScene(
+            ctx,
+            canvas,
+            img,
+            progress
+          );
+
+          const totalDone =
+            i + progress;
+
+          setProgress(
+            82 +
+            Math.round(
+              (
+                totalDone /
+                currentStory.scenes.length
+              ) * 16
+            )
+          );
+
+          if(progress < 1){
+
+            requestAnimationFrame(draw);
+
+          }else{
+
+            resolve();
+
+          }
+
+        }
+
+        requestAnimationFrame(draw);
+
+      });
+
+      try{
+        source.stop();
+      }catch{}
+
+    }
+
+    await sleep(400);
+
+    recorder.stop();
+
+    await finished;
+
+    const finalBlob =
+      new Blob(
+        chunks,
+        {type:mimeType}
+      );
+
+    const videoURL =
+      URL.createObjectURL(finalBlob);
+
+    const video =
+      document.createElement("video");
+
+    video.controls = true;
+    video.src = videoURL;
+
+    videoArea.appendChild(video);
+
+    const extension =
+      mimeType.includes("mp4")
+      ? "mp4"
+      : "webm";
+
+    const link =
+      document.createElement("a");
+
+    link.href = videoURL;
+
+    link.download =
+      "belgesel-shorts." +
+      extension;
+
+    link.className =
+      "download";
+
+    link.textContent =
+      extension === "mp4"
+      ? "⬇️ MP4 VİDEOYU KAYDET"
+      : "⬇️ SHORTS VİDEOSUNU KAYDET";
+
+    videoArea.appendChild(link);
+
+    setProgress(100);
+
+    status.textContent =
+      extension === "mp4"
+      ?
+      "✅ Shorts videosu hazır. MP4 olarak kaydedebilirsin."
+      :
+      "✅ Shorts videosu hazır. Cihazın tarayıcısı MP4 kaydını desteklemediği için WebM oluşturuldu. CapCut bu videoyu içe aktarabilir.";
+
+    await audioContext.close();
+
+  }catch(error){
+
+    status.textContent =
+      "❌ Video oluşturma hatası: " +
+      error.message;
+
+  }finally{
+
+    videoBtn.disabled = false;
+    storyBtn.disabled = false;
+    imageBtn.disabled = false;
+    audioBtn.disabled = false;
+
+  }
 
 };
 
 
-imageBtn.onclick=async()=>{
+function loadImage(src){
 
-if(!currentStory) return;
+  return new Promise(
+    (resolve,reject)=>{
 
-imageBtn.disabled=true;
-storyBtn.disabled=true;
-results.innerHTML='';
+      const img =
+        new Image();
 
-const topic=document.getElementById('topic').value.trim();
+      img.onload =
+        ()=>resolve(img);
 
-const scenes=currentStory.scenes;
+      img.onerror =
+        ()=>reject(
+          new Error(
+            "Video için görsel okunamadı."
+          )
+        );
 
-for(let i=0;i<scenes.length;i++){
+      img.src = src;
 
-status.textContent=
-`Görsel ${i+1}/${scenes.length} hazırlanıyor…`;
-
-try{
-
-const s=scenes[i];
-
-const imagePrompt=
-(s.imagePrompt || topic)+
-', vertical 9:16 composition, cinematic documentary photography, realistic, highly detailed, no text, no logo, no watermark';
-
-const r=await fetch(
-'/.netlify/functions/generate-image',
-{
-method:'POST',
-headers:{
-'content-type':'application/json'
-},
-body:JSON.stringify({
-topic,
-scene:imagePrompt
-})
-}
-);
-
-if(!r.ok){
-
-const t=await r.text();
-throw new Error(t||('HTTP '+r.status));
+    }
+  );
 
 }
 
-const blob=await r.blob();
-const url=URL.createObjectURL(blob);
 
-const box=document.createElement('div');
-box.className='scene';
+function drawScene(
+  ctx,
+  canvas,
+  img,
+  progress
+){
 
-const img=document.createElement('img');
-img.src=url;
-img.alt=`Sahne ${i+1}`;
+  const cw =
+    canvas.width;
 
-const text=document.createElement('div');
-text.className='sceneText';
+  const ch =
+    canvas.height;
 
-const num=document.createElement('div');
-num.className='sceneNumber';
-num.textContent=`Sahne ${i+1}`;
+  ctx.fillStyle =
+    "#000";
 
-const narration=document.createElement('div');
-narration.textContent=s.narration || '';
+  ctx.fillRect(
+    0,
+    0,
+    cw,
+    ch
+  );
 
-text.appendChild(num);
-text.appendChild(narration);
+  /*
+    Hafif Ken Burns kamera hareketi.
+  */
 
-box.appendChild(img);
-box.appendChild(text);
+  const zoom =
+    1 + progress * 0.10;
 
-results.appendChild(box);
+  const imageRatio =
+    img.width / img.height;
 
-}catch(e){
+  const canvasRatio =
+    cw / ch;
 
-const err=document.createElement('div');
-err.className='story';
-err.textContent=
-`Sahne ${i+1} görsel hatası: ${e.message}`;
+  let sw;
+  let sh;
 
-results.appendChild(err);
+  if(imageRatio > canvasRatio){
 
+    sh = img.height / zoom;
+    sw = sh * canvasRatio;
+
+  }else{
+
+    sw = img.width / zoom;
+    sh = sw / canvasRatio;
+
+  }
+
+  const maxX =
+    Math.max(
+      0,
+      img.width-sw
+    );
+
+  const maxY =
+    Math.max(
+      0,
+      img.height-sh
+    );
+
+  const sx =
+    maxX *
+    (
+      0.35 +
+      progress*0.30
+    );
+
+  const sy =
+    maxY *
+    (
+      0.45 -
+      progress*0.10
+    );
+
+  ctx.drawImage(
+    img,
+    sx,
+    sy,
+    sw,
+    sh,
+    0,
+    0,
+    cw,
+    ch
+  );
+
+  /*
+    Alt bölümde hafif karartma.
+  */
+
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      ch*0.65,
+      0,
+      ch
+    );
+
+  gradient.addColorStop(
+    0,
+    "rgba(0,0,0,0)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(0,0,0,.25)"
+  );
+
+  ctx.fillStyle =
+    gradient;
+
+  ctx.fillRect(
+    0,
+    ch*0.65,
+    cw,
+    ch*0.35
+  );
 }
-
-}
-
-status.textContent=
-'✅ Hikâye ve tüm görseller hazır.';
-
-imageBtn.disabled=false;
-storyBtn.disabled=false;
-videoBtn.style.display='block';
-};
 
 </script>
 
