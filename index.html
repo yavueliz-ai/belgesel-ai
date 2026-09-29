@@ -209,7 +209,13 @@ max="8">
 </div>
 
 <script>
-
+window.onerror = function(message, source, line, column, error) {
+  document.getElementById("status").textContent =
+    "JAVASCRIPT HATASI:\n" +
+    message +
+    "\nSatır: " + line +
+    "\nSütun: " + column;
+};
 const storyBtn = document.getElementById("storyBtn");
 const imageBtn = document.getElementById("imageBtn");
 const audioBtn = document.getElementById("audioBtn");
