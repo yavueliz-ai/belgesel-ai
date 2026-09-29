@@ -3,87 +3,283 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Belgesel AI v3.1</title>
+<title>Belgesel AI v3.2</title>
 
 <style>
-body{font-family:system-ui;background:#0b0b0d;color:#f5f5f5;margin:0;padding:22px}
+body{
+  font-family:system-ui;
+  background:#0b0b0d;
+  color:#f5f5f5;
+  margin:0;
+  padding:22px
+}
 .wrap{max-width:760px;margin:auto}
-.card{background:#151518;border:1px solid #2a2a30;border-radius:18px;padding:18px;margin:14px 0}
-input,button{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #333;font-size:16px}
-input{background:#0e0e11;color:white;margin:8px 0 12px}
-button{background:#efefef;color:#111;font-weight:700;cursor:pointer}
+.card{
+  background:#151518;
+  border:1px solid #2a2a30;
+  border-radius:18px;
+  padding:18px;
+  margin:14px 0
+}
+input,button{
+  width:100%;
+  box-sizing:border-box;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid #333;
+  font-size:16px
+}
+input{
+  background:#0e0e11;
+  color:white;
+  margin:8px 0 12px
+}
+button{
+  background:#efefef;
+  color:#111;
+  font-weight:700;
+  cursor:pointer
+}
+button:disabled{opacity:.5}
 .muted{color:#aaa}
 .status{margin-top:12px;white-space:pre-wrap}
-.img{width:100%;border-radius:14px;margin-top:14px;display:none}
+
+.scene{
+  margin-top:20px;
+  overflow:hidden;
+  border-radius:16px;
+  background:#0e0e11;
+  border:1px solid #29292f;
+}
+.scene img{
+  width:100%;
+  aspect-ratio:9/16;
+  object-fit:cover;
+  display:block;
+  animation:cameraMove 8s ease-in-out infinite alternate;
+}
+.sceneText{
+  padding:12px;
+  color:#ddd;
+  font-size:14px
+}
+
+@keyframes cameraMove{
+  0%{
+    transform:scale(1);
+  }
+  100%{
+    transform:scale(1.12) translateY(-1%);
+  }
+}
 </style>
 </head>
 
 <body>
+
 <div class="wrap">
 
-<h1>🎬 Belgesel AI <small>v3.1</small></h1>
-<p class="muted">İlk güvenli test: tek sahne için gerçek AI görseli üretir.</p>
+<h1>🎬 Belgesel AI <small>v3.2</small></h1>
+
+<p class="muted">
+Shorts için 9:16 AI belgesel sahneleri üretir ve sinematik kamera hareketi uygular.
+</p>
 
 <div class="card">
 
-<label>Konu</label>
-<input id="topic" value="Tomris Hatun">
+<label>Belgesel konusu</label>
 
-<label>Sahne</label>
-<input id="scene" value="Avrasya bozkırlarında gün doğumunda atının yanında duran Tomris Hatun">
+<input
+id="topic"
+value="Tomris Hatun"
+placeholder="Örnek: Piri Reis">
 
-<button id="go">1 TEST GÖRSELİ ÜRET</button>
+<label>Sahne sayısı</label>
+
+<input
+id="count"
+type="number"
+value="3"
+min="1"
+max="8">
+
+<button id="go">
+BELGESEL SAHNELERİNİ ÜRET
+</button>
 
 <div id="status" class="status muted"></div>
-<img id="out" class="img" alt="Üretilen görsel">
+
+<div id="results"></div>
 
 </div>
 
 <div class="card">
-<b>Not</b>
+
+<b>v3.2</b>
+
 <p class="muted">
-API anahtarı tarayıcıya gönderilmez. Netlify Function içindeki gizli ortam değişkeninden okunur.
+Her sahne 9:16 Shorts formatında hazırlanır.
+Görsellere otomatik sinematik kamera hareketi uygulanır.
 </p>
+
 </div>
 
 </div>
 
 <script>
-const go=document.getElementById('go'),
-status=document.getElementById('status'),
-out=document.getElementById('out');
+
+const go=document.getElementById('go');
+const status=document.getElementById('status');
+const results=document.getElementById('results');
+
+function createScenes(topic,count){
+
+const templates=[
+
+`${topic}, hikayenin başlangıcı, tarihsel ortamı gösteren geniş sinematik sahne`,
+
+`${topic}, olayların gelişmeye başladığı dramatik tarihsel an`,
+
+`${topic}, hikayenin merkezindeki önemli olay, güçlü sinematik kompozisyon`,
+
+`${topic}, gerilimin yükseldiği tarihsel sahne`,
+
+`${topic}, dönemin insanları ve çevresi, gerçekçi tarihsel atmosfer`,
+
+`${topic}, hikayenin dönüm noktası, epik sinematik görüntü`,
+
+`${topic}, olayların sonucunu gösteren etkileyici tarihsel sahne`,
+
+`${topic}, belgeselin final sahnesi, güçlü ve unutulmaz sinematik görüntü`
+
+];
+
+return templates.slice(0,count);
+
+}
 
 go.onclick=async()=>{
+
+const topic=document.getElementById('topic').value.trim();
+
+const count=Math.min(
+8,
+Math.max(
+1,
+Number(document.getElementById('count').value)||3
+)
+);
+
+if(!topic){
+status.textContent='Lütfen bir konu yaz.';
+return;
+}
+
 go.disabled=true;
-out.style.display='none';
-status.textContent='Görsel hazırlanıyor…';
+
+results.innerHTML='';
+
+status.textContent='Belgesel sahneleri hazırlanıyor…';
+
+const scenes=createScenes(topic,count);
+
+for(let i=0;i<scenes.length;i++){
+
+status.textContent=
+`Sahne ${i+1}/${scenes.length} hazırlanıyor…`;
 
 try{
-const r=await fetch('/.netlify/functions/generate-image',{
+
+const r=await fetch(
+'/.netlify/functions/generate-image',
+{
 method:'POST',
-headers:{'content-type':'application/json'},
+
+headers:{
+'content-type':'application/json'
+},
+
 body:JSON.stringify({
-topic:document.getElementById('topic').value,
-scene:document.getElementById('scene').value
+
+topic:topic,
+
+scene:
+scenes[i]+
+', vertical 9:16 composition, documentary photography, cinematic lighting, historically inspired, realistic, highly detailed, no text'
+
 })
-});
+
+}
+);
 
 if(!r.ok){
-let t=await r.text();
-throw new Error(t||('HTTP '+r.status))
+
+const t=await r.text();
+
+throw new Error(
+t||('HTTP '+r.status)
+);
+
 }
 
-const b=await r.blob();
-out.src=URL.createObjectURL(b);
-out.style.display='block';
-status.textContent='Tamamlandı.';
+const blob=await r.blob();
 
-}catch(e){
-status.textContent='Hata: '+e.message
-}finally{
-go.disabled=false
+const url=
+URL.createObjectURL(blob);
+
+const box=
+document.createElement('div');
+
+box.className='scene';
+
+const img=
+document.createElement('img');
+
+img.src=url;
+
+img.alt=
+`Sahne ${i+1}`;
+
+const text=
+document.createElement('div');
+
+text.className='sceneText';
+
+text.textContent=
+`Sahne ${i+1}: ${scenes[i]}`;
+
+box.appendChild(img);
+
+box.appendChild(text);
+
+results.appendChild(box);
+
 }
+
+catch(e){
+
+const err=
+document.createElement('div');
+
+err.className=
+'sceneText';
+
+err.textContent=
+`Sahne ${i+1} hatası: ${e.message}`;
+
+results.appendChild(err);
+
+}
+
+}
+
+status.textContent=
+'✅ Tüm sahneler hazır. Görseller otomatik hareket ediyor.';
+
+go.disabled=false;
+
 };
+
 </script>
 
 </body>
