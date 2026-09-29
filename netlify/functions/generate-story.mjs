@@ -130,4 +130,37 @@ Markdown veya açıklama ekleme.
 
     try {
       story = JSON.parse(text);
-   
+     } catch (parseError) {
+    return new Response(
+      JSON.stringify({
+        error: "Hikaye verisi okunamadı.",
+        detail: text
+      }),
+      {
+        status: 500,
+        headers: { "content-type": "application/json; charset=utf-8" }
+      }
+    );
+  }
+
+  return new Response(
+    JSON.stringify(story),
+    {
+      status: 200,
+      headers: { "content-type": "application/json; charset=utf-8" }
+    }
+  );
+
+} catch (error) {
+  return new Response(
+    JSON.stringify({
+      error: "Hikaye oluşturulurken hata oluştu.",
+      detail: error.message
+    }),
+    {
+      status: 500,
+      headers: { "content-type": "application/json; charset=utf-8" }
+    }
+  );
+}
+};
