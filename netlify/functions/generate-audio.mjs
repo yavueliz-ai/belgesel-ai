@@ -1,138 +1,89 @@
-export default async (req) => {
-
-  try{
-
-    if(req.method !== "POST"){
-
-      return new Response(
-        "Sadece POST isteği kabul edilir.",
-        {
-          status:405
-        }
-      );
-
-    }
-
-    const apiKey =
-      Netlify.env.get(
-        "POLLINATIONS_API_KEY"
-      );
-
-    if(!apiKey){
-
-      return new Response(
-        "Pollinations API anahtarı bulunamadı.",
-        {
-          status:500
-        }
-      );
-
-    }
-
-    const body =
-      await req.json();
-
-    const text =
-      String(
-        body.text || ""
-      ).trim();
-
-    const allowedVoices = [
-      "nova",
-      "alloy",
-      "echo",
-      "fable",
-      "onyx",
-      "shimmer"
-    ];
-
-    let voice =
-      String(
-        body.voice || "nova"
-      ).trim();
-
-    if(
-      !allowedVoices.includes(voice)
-    ){
-      voice = "nova";
-    }
-
-    if(!text){
-
-      return new Response(
-        "Seslendirilecek metin bulunamadı.",
-        {
-          status:400
-        }
-      );
-
-    }
-
-    const url =
-      "https://gen.pollinations.ai/audio/" +
-      encodeURIComponent(text) +
-      "?voice=" +
-      encodeURIComponent(voice);
-
-    const response =
-      await fetch(
-        url,
-        {
-          headers:{
-            Authorization:
-              `Bearer ${apiKey}`
-          }
-        }
-      );
-
-    if(!response.ok){
-
-      const error =
-        await response.text();
-
-      return new Response(
-        error ||
-        "Ses oluşturulamadı.",
-        {
-          status:response.status
-        }
-      );
-
-    }
-
-    const audio =
-      await response.arrayBuffer();
-
+export default async (request) => {
+  if (request.method !== "POST") {
     return new Response(
-      audio,
+      JSON.stringify({ error: "Sadece POST isteği destekleniyor." }),
       {
-        status:200,
-        headers:{
-          "Content-Type":
-            response.headers.get(
-              "content-type"
-            ) ||
-            "audio/mpeg",
-
-          "Cache-Control":
-            "no-store"
-        }
+        status: 405,
+        headers: { "Content-Type": "application/json" }
       }
     );
-
-  }catch(error){
-
-    return new Response(
-      "Ses sunucusu hatası: " +
-      (
-        error?.message ||
-        "Bilinmeyen hata"
-      ),
-      {
-        status:500
-      }
-    );
-
   }
 
+  try {
+    const body = await request.json();
+
+    const text = String(body.text || "").trim();
+
+    if (!text) {
+      return new Response(
+        JSON.stringify({ error: "Seslendirilecek metin bulunamadı." }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    const TTS_URL =
+      "https://turkish-tts.onrender.com/generate-speech";
+
+    const response = await fetch(TTS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: text,
+        language: "tr-TR",
+        speaker: "dfki"
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error(
+        "Render TTS hatası:",
+        response.status,
+        errorText
+      );
+
+      return new Response(
+        JSON.stringify({
+          error: "Türkçe ses oluşturulamadı.",
+          status: response.status,
+          detail: errorText
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+
+    return new Response(audioBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "audio/wav",
+        "Content-Disposition": 'inline; filename="belgesel-ses.wav"',
+        "Cache-Control": "no-store"
+      }
+    });
+
+  } catch (error) {
+    console.error("generate-audio hatası:", error);
+
+    return new Response(
+      JSON.stringify({
+        error: "Seslendirme sırasında sunucu hatası oluştu.",
+        detail: error.message
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
 };
