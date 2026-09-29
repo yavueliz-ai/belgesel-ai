@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Belgesel AI v4.1</title>
+<title>Belgesel AI v4.2</title>
 
 <style>
 *{box-sizing:border-box}
@@ -120,17 +120,17 @@ button:disabled{
   transition:width .3s
 }
 
+audio{
+  width:100%;
+  margin-top:16px
+}
+
 video{
   width:100%;
   border-radius:16px;
   margin-top:16px;
   background:black;
   aspect-ratio:9/16
-}
-
-audio{
-  width:100%;
-  margin-top:15px
 }
 
 .download{
@@ -153,7 +153,7 @@ audio{
 
 <div class="wrap">
 
-<h1>🎬 Belgesel AI <small>v4.1</small></h1>
+<h1>🎬 Belgesel AI <small>v4.2</small></h1>
 
 <p class="muted">
 Konuyu yaz. Belgesel AI senaryoyu, sahneleri, dikey görselleri,
@@ -165,20 +165,18 @@ Türkçe seslendirmeyi ve Shorts videosunu hazırlasın.
 <label>Belgesel konusu</label>
 
 <input
-  id="topic"
-  value="Tomris Hatun"
-  placeholder="Örnek: Piri Reis"
->
+id="topic"
+value="Tomris Hatun"
+placeholder="Örnek: Piri Reis">
 
 <label>Sahne sayısı</label>
 
 <input
-  id="count"
-  type="number"
-  value="6"
-  min="3"
-  max="8"
->
+id="count"
+type="number"
+value="6"
+min="3"
+max="8">
 
 <button id="storyBtn">
 1 — HİKÂYE VE SAHNELERİ OLUŞTUR
@@ -197,17 +195,14 @@ Türkçe seslendirmeyi ve Shorts videosunu hazırlasın.
 </button>
 
 <div class="progress">
-  <div id="progressBar" class="progressBar"></div>
+<div id="progressBar" class="progressBar"></div>
 </div>
 
 <div id="status" class="status muted"></div>
 
 <div id="storyArea"></div>
-
 <div id="results"></div>
-
 <div id="audioArea"></div>
-
 <div id="videoArea"></div>
 
 </div>
@@ -220,7 +215,7 @@ const imageBtn = document.getElementById("imageBtn");
 const audioBtn = document.getElementById("audioBtn");
 const videoBtn = document.getElementById("videoBtn");
 
-const status = document.getElementById("status");
+const statusEl = document.getElementById("status");
 const storyArea = document.getElementById("storyArea");
 const results = document.getElementById("results");
 const audioArea = document.getElementById("audioArea");
@@ -236,32 +231,30 @@ function setProgress(value){
 }
 
 function sleep(ms){
-  return new Promise(resolve => setTimeout(resolve,ms));
+  return new Promise(function(resolve){
+    setTimeout(resolve,ms);
+  });
 }
 
 
-/* =========================================================
-   1 — HİKÂYE
-========================================================= */
+/* =========================
+   1 - HİKAYE
+========================= */
 
-storyBtn.onclick = async () => {
+storyBtn.onclick = async function(){
 
-  const topic =
-    document.getElementById("topic").value.trim();
+  const topic = document.getElementById("topic").value.trim();
 
-  const sceneCount =
-    Math.min(
-      8,
-      Math.max(
-        3,
-        Number(
-          document.getElementById("count").value
-        ) || 6
-      )
-    );
+  const sceneCount = Math.min(
+    8,
+    Math.max(
+      3,
+      Number(document.getElementById("count").value) || 6
+    )
+  );
 
   if(!topic){
-    status.textContent = "Lütfen bir konu yaz.";
+    statusEl.textContent = "Lütfen bir konu yaz.";
     return;
   }
 
@@ -282,7 +275,7 @@ storyBtn.onclick = async () => {
 
   setProgress(10);
 
-  status.textContent =
+  statusEl.textContent =
     "✍️ Belgesel senaryosu hazırlanıyor...";
 
   try{
@@ -295,8 +288,8 @@ storyBtn.onclick = async () => {
           "content-type":"application/json"
         },
         body:JSON.stringify({
-          topic,
-          sceneCount
+          topic:topic,
+          sceneCount:sceneCount
         })
       }
     );
@@ -307,10 +300,8 @@ storyBtn.onclick = async () => {
 
     try{
       data = JSON.parse(raw);
-    }catch{
-      throw new Error(
-        raw || "Sunucu yanıtı okunamadı."
-      );
+    }catch(e){
+      throw new Error(raw || "Sunucu yanıtı okunamadı.");
     }
 
     if(!r.ok){
@@ -320,48 +311,31 @@ storyBtn.onclick = async () => {
       );
     }
 
-    if(
-      !Array.isArray(data.scenes) ||
-      data.scenes.length === 0
-    ){
+    if(!Array.isArray(data.scenes)){
       throw new Error("Sahneler alınamadı.");
     }
 
     currentStory = data;
 
-    const container =
-      document.createElement("div");
-
+    const container = document.createElement("div");
     container.className = "story";
 
-    const title =
-      document.createElement("h2");
-
-    title.textContent =
-      data.title || topic;
+    const title = document.createElement("h2");
+    title.textContent = data.title || topic;
 
     container.appendChild(title);
 
-    data.scenes.forEach((scene,index)=>{
+    data.scenes.forEach(function(scene,index){
 
-      const box =
-        document.createElement("div");
-
+      const box = document.createElement("div");
       box.className = "sceneText";
 
-      const n =
-        document.createElement("div");
-
+      const n = document.createElement("div");
       n.className = "sceneNumber";
+      n.textContent = "Sahne " + (index+1);
 
-      n.textContent =
-        `Sahne ${index+1}`;
-
-      const narration =
-        document.createElement("div");
-
-      narration.textContent =
-        scene.narration || "";
+      const narration = document.createElement("div");
+      narration.textContent = scene.narration || "";
 
       box.appendChild(n);
       box.appendChild(narration);
@@ -376,12 +350,12 @@ storyBtn.onclick = async () => {
 
     setProgress(25);
 
-    status.textContent =
+    statusEl.textContent =
       "✅ Senaryo hazır.\nŞimdi tüm görselleri oluşturabilirsin.";
 
   }catch(error){
 
-    status.textContent =
+    statusEl.textContent =
       "❌ Hata: " + error.message;
 
     setProgress(0);
@@ -394,13 +368,15 @@ storyBtn.onclick = async () => {
 };
 
 
-/* =========================================================
-   2 — GÖRSELLER
-========================================================= */
+/* =========================
+   2 - GÖRSELLER
+========================= */
 
-imageBtn.onclick = async () => {
+imageBtn.onclick = async function(){
 
-  if(!currentStory) return;
+  if(!currentStory){
+    return;
+  }
 
   storyBtn.disabled = true;
   imageBtn.disabled = true;
@@ -418,19 +394,20 @@ imageBtn.onclick = async () => {
   const topic =
     document.getElementById("topic").value.trim();
 
-  const scenes =
-    currentStory.scenes;
+  const scenes = currentStory.scenes;
 
   for(let i=0;i<scenes.length;i++){
 
-    status.textContent =
-      `🖼️ Görsel ${i+1}/${scenes.length} hazırlanıyor...`;
+    statusEl.textContent =
+      "🖼️ Görsel " +
+      (i+1) +
+      "/" +
+      scenes.length +
+      " hazırlanıyor...";
 
     setProgress(
       25 +
-      Math.round(
-        ((i+1)/scenes.length)*30
-      )
+      Math.round(((i+1)/scenes.length)*30)
     );
 
     try{
@@ -445,7 +422,7 @@ imageBtn.onclick = async () => {
             "content-type":"application/json"
           },
           body:JSON.stringify({
-            topic,
+            topic:topic,
             scene:
               scene.imagePrompt ||
               scene.narration ||
@@ -456,24 +433,23 @@ imageBtn.onclick = async () => {
 
       if(!r.ok){
 
-        const text =
-          await r.text();
+        const errorText = await r.text();
 
         throw new Error(
-          text || "Görsel oluşturulamadı."
+          errorText ||
+          "Görsel oluşturulamadı."
         );
 
       }
 
-      const blob =
-        await r.blob();
+      const blob = await r.blob();
 
       const url =
         URL.createObjectURL(blob);
 
       generatedImages.push({
-        blob,
-        url
+        blob:blob,
+        url:url
       });
 
       const box =
@@ -497,7 +473,7 @@ imageBtn.onclick = async () => {
       num.className = "sceneNumber";
 
       num.textContent =
-        `Sahne ${i+1}`;
+        "Sahne " + (i+1);
 
       const narration =
         document.createElement("div");
@@ -515,8 +491,11 @@ imageBtn.onclick = async () => {
 
     }catch(error){
 
-      status.textContent =
-        `❌ Sahne ${i+1} hatası: ${error.message}`;
+      statusEl.textContent =
+        "❌ Sahne " +
+        (i+1) +
+        " hatası: " +
+        error.message;
 
       imageBtn.disabled = false;
       storyBtn.disabled = false;
@@ -529,7 +508,7 @@ imageBtn.onclick = async () => {
 
   setProgress(55);
 
-  status.textContent =
+  statusEl.textContent =
     "✅ Tüm görseller hazır.";
 
   audioBtn.classList.remove("hidden");
@@ -539,63 +518,67 @@ imageBtn.onclick = async () => {
 };
 
 
-/* =========================================================
-   3 — TEK PARÇA TÜRKÇE SESLENDİRME
-========================================================= */
+/* =========================
+   3 - TEK SES DOSYASI
+========================= */
 
-audioBtn.onclick = async () => {
+audioBtn.onclick = async function(){
 
-  if(!currentStory) return;
+  if(!currentStory){
+    return;
+  }
 
   if(
     generatedImages.length !==
     currentStory.scenes.length
   ){
-    status.textContent =
+    statusEl.textContent =
       "Önce bütün görselleri oluştur.";
     return;
   }
+
+  const narrationParts =
+    currentStory.scenes
+      .map(function(scene){
+        return String(
+          scene.narration || ""
+        ).trim();
+      })
+      .filter(function(text){
+        return text.length > 0;
+      });
+
+  if(narrationParts.length === 0){
+
+    statusEl.textContent =
+      "❌ Seslendirilecek metin bulunamadı.";
+
+    return;
+  }
+
+  /*
+    Sahne metinlerinin arasına nokta ve boşluk
+    koyuyoruz. TTS doğal bir kısa duraklama yapar.
+  */
+
+  const fullNarration =
+    narrationParts.join(" ... ");
+
+  generatedAudio = null;
+
+  audioArea.innerHTML = "";
+  videoArea.innerHTML = "";
+
+  videoBtn.classList.add("hidden");
 
   audioBtn.disabled = true;
   storyBtn.disabled = true;
   imageBtn.disabled = true;
 
-  videoBtn.classList.add("hidden");
-
-  audioArea.innerHTML = "";
-  videoArea.innerHTML = "";
-
-  generatedAudio = null;
-
-  /*
-    Bütün sahnelerin anlatımlarını
-    tek metinde birleştiriyoruz.
-  */
-
-  const fullNarration =
-    currentStory.scenes
-      .map(scene =>
-        String(scene.narration || "").trim()
-      )
-      .filter(Boolean)
-      .join("\n\n");
-
-  if(!fullNarration){
-
-    status.textContent =
-      "❌ Seslendirilecek anlatım bulunamadı.";
-
-    audioBtn.disabled = false;
-    storyBtn.disabled = false;
-    imageBtn.disabled = false;
-
-    return;
-  }
-
-  status.textContent =
-    "🎙️ Türkçe anlatım tek parça olarak hazırlanıyor...\nİlk işlem biraz uzun sürebilir.";
-
   setProgress(65);
+
+  statusEl.textContent =
+    "🎙️ Türkçe anlatım tek parça olarak hazırlanıyor...\nLütfen işlem tamamlanana kadar sayfayı kapatma.";
 
   try{
 
@@ -629,10 +612,11 @@ audioBtn.onclick = async () => {
           data.detail ||
           raw;
 
-      }catch{}
+      }catch(e){}
 
       throw new Error(
-        message || "Ses üretilemedi."
+        message ||
+        "Ses üretilemedi."
       );
 
     }
@@ -640,10 +624,12 @@ audioBtn.onclick = async () => {
     const blob =
       await r.blob();
 
-    if(!blob.size){
+    if(!blob || blob.size === 0){
+
       throw new Error(
-        "Boş ses dosyası alındı."
+        "Ses servisi boş dosya gönderdi."
       );
+
     }
 
     generatedAudio = blob;
@@ -651,28 +637,31 @@ audioBtn.onclick = async () => {
     const audioURL =
       URL.createObjectURL(blob);
 
-    const audio =
+    const player =
       document.createElement("audio");
 
-    audio.controls = true;
-    audio.src = audioURL;
+    player.controls = true;
+    player.preload = "metadata";
+    player.src = audioURL;
 
-    audioArea.appendChild(audio);
+    audioArea.appendChild(player);
 
     setProgress(80);
 
-    status.textContent =
-      "✅ Türkçe seslendirme hazır.\nÖnce aşağıdaki sesi dinleyebilirsin.";
+    statusEl.textContent =
+      "✅ Türkçe seslendirme hazır.\nAşağıdaki oynatıcıdan sesi dinleyebilirsin.";
 
     videoBtn.classList.remove("hidden");
 
   }catch(error){
 
-    status.textContent =
-      "❌ Seslendirme hatası: " +
-      error.message;
+    generatedAudio = null;
 
     setProgress(55);
+
+    statusEl.textContent =
+      "❌ Seslendirme hatası: " +
+      error.message;
 
   }finally{
 
@@ -684,11 +673,11 @@ audioBtn.onclick = async () => {
 };
 
 
-/* =========================================================
-   4 — SHORTS VİDEOSU
-========================================================= */
+/* =========================
+   4 - SHORTS VİDEOSU
+========================= */
 
-videoBtn.onclick = async () => {
+videoBtn.onclick = async function(){
 
   if(
     !currentStory ||
@@ -696,9 +685,23 @@ videoBtn.onclick = async () => {
       currentStory.scenes.length ||
     !generatedAudio
   ){
-    status.textContent =
+
+    statusEl.textContent =
       "Önce görselleri ve seslendirmeyi oluştur.";
+
     return;
+
+  }
+
+  if(
+    typeof MediaRecorder === "undefined"
+  ){
+
+    statusEl.textContent =
+      "❌ Bu tarayıcı video kaydını desteklemiyor.";
+
+    return;
+
   }
 
   videoBtn.disabled = true;
@@ -708,46 +711,624 @@ videoBtn.onclick = async () => {
 
   videoArea.innerHTML = "";
 
-  status.textContent =
-    "🎬 Shorts videosu hazırlanıyor...\nVideo, seslendirme süresi boyunca oluşturulacak.";
-
   setProgress(82);
+
+  statusEl.textContent =
+    "🎬 Shorts videosu hazırlanıyor...\nBu işlem seslendirme süresi kadar sürebilir.";
 
   let audioContext = null;
 
   try{
 
+    const AudioContextClass =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    if(!AudioContextClass){
+
+      throw new Error(
+        "Bu tarayıcı ses işleme özelliğini desteklemiyor."
+      );
+
+    }
+
     audioContext =
-      new (
-        window.AudioContext ||
-        window.webkitAudioContext
-      )();
+      new AudioContextClass();
 
     await audioContext.resume();
-
-    /*
-      Tek WAV dosyasını çözüyoruz.
-    */
 
     const audioArrayBuffer =
       await generatedAudio.arrayBuffer();
 
-    const audioBuffer =
+    const decodedAudio =
       await audioContext.decodeAudioData(
         audioArrayBuffer.slice(0)
       );
 
     const totalDuration =
-      audioBuffer.duration;
+      decodedAudio.duration;
 
     if(
       !Number.isFinite(totalDuration) ||
       totalDuration <= 0
     ){
+
       throw new Error(
-        "Ses süresi okunamadı."
+        "Ses dosyasının süresi okunamadı."
       );
+
     }
 
     /*
-      Her
+      Görselleri video başlamadan önce yükle.
+    */
+
+    const loadedImages = [];
+
+    for(
+      let i=0;
+      i<generatedImages.length;
+      i++
+    ){
+
+      const image =
+        await loadImage(
+          generatedImages[i].url
+        );
+
+      loadedImages.push(image);
+
+    }
+
+    /*
+      Her sahnenin yaklaşık konuşma süresini
+      metin uzunluğuna göre hesapla.
+    */
+
+    const textWeights =
+      currentStory.scenes.map(
+        function(scene){
+
+          return Math.max(
+            1,
+            String(
+              scene.narration || ""
+            ).trim().length
+          );
+
+        }
+      );
+
+    const totalWeight =
+      textWeights.reduce(
+        function(total,value){
+          return total + value;
+        },
+        0
+      );
+
+    const sceneDurations =
+      textWeights.map(
+        function(value){
+
+          return (
+            totalDuration *
+            (value/totalWeight)
+          );
+
+        }
+      );
+
+    const sceneStarts = [];
+
+    let accumulated = 0;
+
+    for(
+      let i=0;
+      i<sceneDurations.length;
+      i++
+    ){
+
+      sceneStarts.push(accumulated);
+
+      accumulated +=
+        sceneDurations[i];
+
+    }
+
+    /*
+      9:16 Shorts alanı.
+    */
+
+    const canvas =
+      document.createElement("canvas");
+
+    canvas.width = 540;
+    canvas.height = 960;
+
+    const ctx =
+      canvas.getContext("2d");
+
+    if(!ctx){
+
+      throw new Error(
+        "Video çizim alanı açılamadı."
+      );
+
+    }
+
+    drawScene(
+      ctx,
+      canvas,
+      loadedImages[0],
+      0
+    );
+
+    const canvasStream =
+      canvas.captureStream(30);
+
+    const destination =
+      audioContext.createMediaStreamDestination();
+
+    const source =
+      audioContext.createBufferSource();
+
+    source.buffer =
+      decodedAudio;
+
+    const gain =
+      audioContext.createGain();
+
+    gain.gain.value = 1;
+
+    source.connect(gain);
+
+    /*
+      Bir bağlantı kaydedilen videoya,
+      diğer bağlantı telefondan duyulan sese.
+    */
+
+    gain.connect(destination);
+    gain.connect(audioContext.destination);
+
+    const audioTracks =
+      destination.stream.getAudioTracks();
+
+    if(audioTracks.length === 0){
+
+      throw new Error(
+        "Video ses kanalı oluşturulamadı."
+      );
+
+    }
+
+    canvasStream.addTrack(
+      audioTracks[0]
+    );
+
+    let mimeType = "";
+
+    const candidates = [
+      "video/mp4;codecs=h264,aac",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm"
+    ];
+
+    for(
+      let i=0;
+      i<candidates.length;
+      i++
+    ){
+
+      if(
+        MediaRecorder.isTypeSupported(
+          candidates[i]
+        )
+      ){
+
+        mimeType =
+          candidates[i];
+
+        break;
+
+      }
+
+    }
+
+    if(!mimeType){
+
+      throw new Error(
+        "Telefonun tarayıcısında uygun video formatı bulunamadı."
+      );
+
+    }
+
+    const recorder =
+      new MediaRecorder(
+        canvasStream,
+        {
+          mimeType:mimeType,
+          videoBitsPerSecond:5000000
+        }
+      );
+
+    const chunks = [];
+
+    recorder.ondataavailable =
+      function(event){
+
+        if(
+          event.data &&
+          event.data.size > 0
+        ){
+
+          chunks.push(
+            event.data
+          );
+
+        }
+
+      };
+
+    const recorderFinished =
+      new Promise(
+        function(resolve,reject){
+
+          recorder.onstop =
+            function(){
+              resolve();
+            };
+
+          recorder.onerror =
+            function(event){
+
+              reject(
+                event.error ||
+                new Error(
+                  "Video kaydı sırasında hata oluştu."
+                )
+              );
+
+            };
+
+        }
+      );
+
+    recorder.start(1000);
+
+    await sleep(250);
+
+    const videoStart =
+      performance.now();
+
+    source.start(0);
+
+    /*
+      Tek animasyon döngüsü.
+    */
+
+    await new Promise(
+      function(resolve){
+
+        function renderFrame(now){
+
+          const elapsed =
+            Math.min(
+              (now-videoStart)/1000,
+              totalDuration
+            );
+
+          let sceneIndex =
+            sceneDurations.length - 1;
+
+          for(
+            let i=0;
+            i<sceneDurations.length;
+            i++
+          ){
+
+            const sceneEnd =
+              sceneStarts[i] +
+              sceneDurations[i];
+
+            if(
+              elapsed <
+              sceneEnd
+            ){
+
+              sceneIndex = i;
+              break;
+
+            }
+
+          }
+
+          const start =
+            sceneStarts[sceneIndex];
+
+          const duration =
+            Math.max(
+              0.1,
+              sceneDurations[sceneIndex]
+            );
+
+          const localProgress =
+            Math.min(
+              1,
+              Math.max(
+                0,
+                (elapsed-start) /
+                duration
+              )
+            );
+
+          drawScene(
+            ctx,
+            canvas,
+            loadedImages[sceneIndex],
+            localProgress
+          );
+
+          setProgress(
+            82 +
+            Math.round(
+              (
+                elapsed /
+                totalDuration
+              ) * 16
+            )
+          );
+
+          if(
+            elapsed <
+            totalDuration
+          ){
+
+            requestAnimationFrame(
+              renderFrame
+            );
+
+          }else{
+
+            resolve();
+
+          }
+
+        }
+
+        requestAnimationFrame(
+          renderFrame
+        );
+
+      }
+    );
+
+    /*
+      Son ses paketinin MediaRecorder'a
+      ulaşması için kısa pay bırak.
+    */
+
+    await sleep(500);
+
+    try{
+      source.stop();
+    }catch(e){}
+
+    recorder.stop();
+
+    await recorderFinished;
+
+    if(chunks.length === 0){
+
+      throw new Error(
+        "Video dosyası oluşturulamadı."
+      );
+
+    }
+
+    const finalBlob =
+      new Blob(
+        chunks,
+        {
+          type:mimeType
+        }
+      );
+
+    const videoURL =
+      URL.createObjectURL(
+        finalBlob
+      );
+
+    const video =
+      document.createElement("video");
+
+    video.controls = true;
+    video.playsInline = true;
+    video.src = videoURL;
+
+    videoArea.appendChild(
+      video
+    );
+
+    const extension =
+      mimeType.indexOf("mp4") !== -1
+      ? "mp4"
+      : "webm";
+
+    const link =
+      document.createElement("a");
+
+    link.href =
+      videoURL;
+
+    link.download =
+      "belgesel-shorts." +
+      extension;
+
+    link.className =
+      "download";
+
+    if(extension === "mp4"){
+
+      link.textContent =
+        "⬇️ MP4 VİDEOYU KAYDET";
+
+    }else{
+
+      link.textContent =
+        "⬇️ SHORTS VİDEOSUNU KAYDET";
+
+    }
+
+    videoArea.appendChild(
+      link
+    );
+
+    setProgress(100);
+
+    if(extension === "mp4"){
+
+      statusEl.textContent =
+        "✅ Shorts videosu hazır. MP4 olarak kaydedebilirsin.";
+
+    }else{
+
+      statusEl.textContent =
+        "✅ Shorts videosu hazır. Telefonun tarayıcısı MP4 kaydını desteklemediği için WebM oluşturuldu. CapCut'a aktarabilirsin.";
+
+    }
+
+  }catch(error){
+
+    statusEl.textContent =
+      "❌ Video oluşturma hatası: " +
+      error.message;
+
+  }finally{
+
+    if(audioContext){
+
+      try{
+        await audioContext.close();
+      }catch(e){}
+
+    }
+
+    videoBtn.disabled = false;
+    storyBtn.disabled = false;
+    imageBtn.disabled = false;
+    audioBtn.disabled = false;
+
+  }
+
+};
+
+
+/* =========================
+   YARDIMCI FONKSİYONLAR
+========================= */
+
+function loadImage(src){
+
+  return new Promise(
+    function(resolve,reject){
+
+      const img =
+        new Image();
+
+      img.onload =
+        function(){
+          resolve(img);
+        };
+
+      img.onerror =
+        function(){
+
+          reject(
+            new Error(
+              "Video için görsel okunamadı."
+            )
+          );
+
+        };
+
+      img.src = src;
+
+    }
+  );
+
+}
+
+
+function drawScene(
+  ctx,
+  canvas,
+  img,
+  progress
+){
+
+  const cw =
+    canvas.width;
+
+  const ch =
+    canvas.height;
+
+  ctx.fillStyle =
+    "#000";
+
+  ctx.fillRect(
+    0,
+    0,
+    cw,
+    ch
+  );
+
+  const zoom =
+    1 +
+    progress*0.10;
+
+  const imageRatio =
+    img.width /
+    img.height;
+
+  const canvasRatio =
+    cw /
+    ch;
+
+  let sw;
+  let sh;
+
+  if(
+    imageRatio >
+    canvasRatio
+  ){
+
+    sh =
+      img.height /
+      zoom;
+
+    sw =
+      sh *
+      canvasRatio;
+
+  }else{
+
+    sw =
+      img.width /
+      zoom;
+
+    sh =
+      sw /
+      canvasRatio;
+
+  }
+
+  const maxX =
+    Math.max(
+      0,
+      img.width-sw
+    );
+
+  const max
